@@ -1,17 +1,16 @@
--- Auto Training Script untuk meningkatkan Combat Power
+-- ULTRA SPAM TRAINING SCRIPT
+-- Maximum boost & spam untuk Combat Power hingga TRILIUN+
 -- Optimized for Delta Executor
--- Fixed Version with Better Error Handling
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 -- Variabel Global
 local autoTrainEnabled = false
 local selectedTrainingType = "arms"
-local trainingSpeed = 4
-local trainingDelay = 0.01
+local trainingSpeed = 10
+local spamIntensity = 50 -- Berapa kali spam dalam 1 detik
 local isMinimized = false
 
 -- Safe function to get remote
@@ -27,106 +26,122 @@ local function getRemote(path)
     return success and result or nil
 end
 
--- Training Types
-local TrainingTypes = {
+-- Training Types dengan ID
+local TrainingIDs = {
     arms = "Training_2001",
     legs = "Training_2002",
     back = "Training_2003",
     agility = "Training_2004"
 }
 
--- Fungsi Auto Train dengan Error Handling
-local function startAutoTrain()
+-- ULTRA SPAM FUNCTION - Spam sebanyak mungkin!
+local function ultraSpamTrain()
     spawn(function()
         while autoTrainEnabled do
-            local success = pcall(function()
-                -- Try to get remotes
-                local ApplyMobileTrain = getRemote({"TrainEquipment", "Remote", "ApplyMobileTrain"})
-                local TrainSpeedHasChanged = getRemote({"TrainSystem", "Remote", "TrainSpeedHasChanged"})
-                local ApplyBindingTrainingEffect = getRemote({"TrainEquipment", "Remote", "ApplyBindingTrainingEffect"})
-                local ApplyBindingTrainingBoostEffect = getRemote({"TrainEquipment", "Remote", "ApplyBindingTrainingBoostEffect"})
-                local ApplyStationaryTrain = getRemote({"TrainEquipment", "Remote", "ApplyStationaryTrain"})
-                
-                -- Execute training
-                if ApplyMobileTrain then
-                    ApplyMobileTrain:InvokeServer()
-                end
-                
-                if TrainSpeedHasChanged then
-                    TrainSpeedHasChanged:FireServer(trainingSpeed)
-                end
-                
-                if ApplyBindingTrainingEffect then
-                    local trainingId = TrainingTypes[selectedTrainingType]
-                    if trainingId then
-                        ApplyBindingTrainingEffect:InvokeServer(trainingId, "Emit_2")
-                    end
-                end
-                
-                if ApplyBindingTrainingBoostEffect then
-                    ApplyBindingTrainingBoostEffect:InvokeServer()
-                end
-                
-                if ApplyStationaryTrain then
-                    ApplyStationaryTrain:InvokeServer()
-                end
-            end)
-            
-            if not success then
-                warn("Training error - will retry")
+            -- Spam berkali-kali dalam loop super cepat
+            for i = 1, spamIntensity do
+                spawn(function()
+                    pcall(function()
+                        local ApplyMobileTrain = getRemote({"TrainEquipment", "Remote", "ApplyMobileTrain"})
+                        local TrainSpeedHasChanged = getRemote({"TrainSystem", "Remote", "TrainSpeedHasChanged"})
+                        local ApplyBindingTrainingEffect = getRemote({"TrainEquipment", "Remote", "ApplyBindingTrainingEffect"})
+                        local ApplyBindingTrainingBoostEffect = getRemote({"TrainEquipment", "Remote", "ApplyBindingTrainingBoostEffect"})
+                        local ApplyStationaryTrain = getRemote({"TrainEquipment", "Remote", "ApplyStationaryTrain"})
+                        
+                        -- Mobile Train
+                        if ApplyMobileTrain then
+                            for j = 1, 3 do -- 3x spam per call
+                                ApplyMobileTrain:InvokeServer()
+                            end
+                        end
+                        
+                        -- Training Speed - SPAM MAX
+                        if TrainSpeedHasChanged then
+                            for j = 1, 5 do
+                                TrainSpeedHasChanged:FireServer(trainingSpeed)
+                            end
+                        end
+                        
+                        -- Training Effect - Element yang dipilih
+                        if ApplyBindingTrainingEffect then
+                            local trainingId = TrainingIDs[selectedTrainingType]
+                            for j = 1, 5 do
+                                ApplyBindingTrainingEffect:InvokeServer(trainingId, "Emit_2")
+                            end
+                        end
+                        
+                        -- BOOST EFFECT - SPAM BANYAK!
+                        if ApplyBindingTrainingBoostEffect then
+                            for j = 1, 10 do -- 10x boost spam!
+                                ApplyBindingTrainingBoostEffect:InvokeServer()
+                            end
+                        end
+                        
+                        -- Stationary Train
+                        if ApplyStationaryTrain then
+                            for j = 1, 3 do
+                                ApplyStationaryTrain:InvokeServer()
+                            end
+                        end
+                    end)
+                end)
             end
-            
-            task.wait(trainingDelay)
+            task.wait(0.001) -- Delay super minimal
         end
     end)
 end
 
 -- GUI Creation
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AutoTrainGUI"
+ScreenGui.Name = "UltraSpamTrainer"
 ScreenGui.ResetOnSpawn = false
 
--- Check if GUI already exists
-local existingGui = game.CoreGui:FindFirstChild("AutoTrainGUI")
-if existingGui then
-    existingGui:Destroy()
-end
+local existingGui = game.CoreGui:FindFirstChild("UltraSpamTrainer")
+if existingGui then existingGui:Destroy() end
 
 ScreenGui.Parent = game.CoreGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
-MainFrame.Size = UDim2.new(0, 350, 0, 500)
+MainFrame.Position = UDim2.new(0.35, 0, 0.2, 0)
+MainFrame.Size = UDim2.new(0, 400, 0, 550)
 MainFrame.ClipsDescendants = true
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
+-- Glow Effect
+local Glow = Instance.new("ImageLabel")
+Glow.Name = "Glow"
+Glow.Parent = MainFrame
+Glow.AnchorPoint = Vector2.new(0.5, 0.5)
+Glow.BackgroundTransparency = 1
+Glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+Glow.Size = UDim2.new(1, 40, 1, 40)
+Glow.ZIndex = 0
+Glow.Image = "rbxassetid://6014261993"
+Glow.ImageColor3 = Color3.fromRGB(255, 50, 150)
+Glow.ImageTransparency = 0.7
+
 -- Title Bar
 local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Parent = MainFrame
-TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 TitleBar.BorderSizePixel = 0
-TitleBar.Size = UDim2.new(1, 0, 0, 50)
+TitleBar.Size = UDim2.new(1, 0, 0, 55)
 
 local TitleCorner = Instance.new("UICorner")
 TitleCorner.CornerRadius = UDim.new(0, 12)
 TitleCorner.Parent = TitleBar
 
--- Make draggable
-local dragging
-local dragInput
-local dragStart
-local startPos
-
+-- Draggable
+local dragging, dragInput, dragStart, startPos
 local function update(input)
     local delta = input.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
@@ -137,7 +152,6 @@ TitleBar.InputBegan:Connect(function(input)
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
-        
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -153,274 +167,332 @@ TitleBar.InputChanged:Connect(function(input)
 end)
 
 game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
+    if input == dragInput and dragging then update(input) end
 end)
 
 -- Title
 local Title = Instance.new("TextLabel")
-Title.Name = "Title"
 Title.Parent = TitleBar
 Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "⚡ Combat Power Booster"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 18
+Title.Text = "⚡ ULTRA SPAM TRAINER"
+Title.TextColor3 = Color3.fromRGB(255, 100, 255)
+Title.TextSize = 19
 Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Subtitle
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Parent = TitleBar
+Subtitle.BackgroundTransparency = 1
+Subtitle.Position = UDim2.new(0, 15, 0.55, 0)
+Subtitle.Size = UDim2.new(0.6, 0, 0.45, 0)
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.Text = "Boost to TRILLIONS 🚀"
+Subtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+Subtitle.TextSize = 11
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Minimize Button
 local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Parent = TitleBar
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
-MinimizeButton.Position = UDim2.new(0.82, 0, 0.25, 0)
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
+MinimizeButton.Position = UDim2.new(0.82, 0, 0.27, 0)
+MinimizeButton.Size = UDim2.new(0, 27, 0, 27)
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.Text = "—"
 MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeButton.TextSize = 16
 
 local MinCorner = Instance.new("UICorner")
-MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.CornerRadius = UDim.new(0, 7)
 MinCorner.Parent = MinimizeButton
 
 -- Close Button
 local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
 CloseButton.Parent = TitleBar
-CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-CloseButton.Position = UDim2.new(0.91, 0, 0.25, 0)
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+CloseButton.Position = UDim2.new(0.91, 0, 0.27, 0)
+CloseButton.Size = UDim2.new(0, 27, 0, 27)
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.Text = "×"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.TextSize = 20
 
 local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.CornerRadius = UDim.new(0, 7)
 CloseCorner.Parent = CloseButton
 
 -- Content Frame
 local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
 ContentFrame.Parent = MainFrame
 ContentFrame.BackgroundTransparency = 1
-ContentFrame.Position = UDim2.new(0, 0, 0, 50)
-ContentFrame.Size = UDim2.new(1, 0, 1, -50)
+ContentFrame.Position = UDim2.new(0, 0, 0, 55)
+ContentFrame.Size = UDim2.new(1, 0, 1, -55)
 
 -- Status Label
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Name = "StatusLabel"
 StatusLabel.Parent = ContentFrame
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Position = UDim2.new(0.1, 0, 0.02, 0)
-StatusLabel.Size = UDim2.new(0.8, 0, 0, 30)
-StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+StatusLabel.Position = UDim2.new(0.08, 0, 0.02, 0)
+StatusLabel.Size = UDim2.new(0.84, 0, 0, 32)
+StatusLabel.Font = Enum.Font.GothamBold
 StatusLabel.Text = "Status: Inactive ⭕"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 StatusLabel.TextSize = 14
 
--- Toggle Button
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Parent = ContentFrame
-ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 180, 80)
-ToggleButton.Position = UDim2.new(0.15, 0, 0.09, 0)
-ToggleButton.Size = UDim2.new(0.7, 0, 0, 40)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "START AUTO TRAIN"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 16
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 8)
+StatusCorner.Parent = StatusLabel
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 8)
-ToggleCorner.Parent = ToggleButton
+-- ULTRA SPAM BUTTON
+local SpamButton = Instance.new("TextButton")
+SpamButton.Parent = ContentFrame
+SpamButton.BackgroundColor3 = Color3.fromRGB(255, 50, 150)
+SpamButton.Position = UDim2.new(0.08, 0, 0.09, 0)
+SpamButton.Size = UDim2.new(0.84, 0, 0, 55)
+SpamButton.Font = Enum.Font.GothamBold
+SpamButton.Text = "🚀 START ULTRA SPAM"
+SpamButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpamButton.TextSize = 18
 
--- Training Type Label
-local TrainTypeLabel = Instance.new("TextLabel")
-TrainTypeLabel.Name = "TrainTypeLabel"
-TrainTypeLabel.Parent = ContentFrame
-TrainTypeLabel.BackgroundTransparency = 1
-TrainTypeLabel.Position = UDim2.new(0.1, 0, 0.21, 0)
-TrainTypeLabel.Size = UDim2.new(0.8, 0, 0, 25)
-TrainTypeLabel.Font = Enum.Font.GothamBold
-TrainTypeLabel.Text = "Training Type:"
-TrainTypeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TrainTypeLabel.TextSize = 14
-TrainTypeLabel.TextXAlignment = Enum.TextXAlignment.Left
+local SpamCorner = Instance.new("UICorner")
+SpamCorner.CornerRadius = UDim.new(0, 10)
+SpamCorner.Parent = SpamButton
 
--- Training Type Buttons
-local function createTypeButton(name, position, yPos)
+-- Training Type Selection
+local TypeFrame = Instance.new("Frame")
+TypeFrame.Parent = ContentFrame
+TypeFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+TypeFrame.Position = UDim2.new(0.08, 0, 0.22, 0)
+TypeFrame.Size = UDim2.new(0.84, 0, 0, 130)
+
+local TypeCorner = Instance.new("UICorner")
+TypeCorner.CornerRadius = UDim.new(0, 10)
+TypeCorner.Parent = TypeFrame
+
+local TypeLabel = Instance.new("TextLabel")
+TypeLabel.Parent = TypeFrame
+TypeLabel.BackgroundTransparency = 1
+TypeLabel.Position = UDim2.new(0, 15, 0, 8)
+TypeLabel.Size = UDim2.new(1, -30, 0, 25)
+TypeLabel.Font = Enum.Font.GothamBold
+TypeLabel.Text = "🎯 Select Training Element:"
+TypeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TypeLabel.TextSize = 14
+TypeLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local function createTypeButton(name, position, yPos, bonus)
     local btn = Instance.new("TextButton")
-    btn.Name = name .. "Button"
-    btn.Parent = ContentFrame
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    btn.Parent = TypeFrame
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
     btn.Position = UDim2.new(position, 0, yPos, 0)
-    btn.Size = UDim2.new(0.35, 0, 0, 35)
-    btn.Font = Enum.Font.Gotham
-    btn.Text = name:upper()
+    btn.Size = UDim2.new(0.44, 0, 0, 38)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name:upper() .. "\n+" .. bonus .. "/train"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
+    btn.TextSize = 12
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
     
     return btn
 end
 
-local ArmsButton = createTypeButton("Arms", 0.1, 0.28)
-local LegsButton = createTypeButton("Legs", 0.55, 0.28)
-local BackButton = createTypeButton("Back", 0.1, 0.37)
-local AgilityButton = createTypeButton("Agility", 0.55, 0.37)
+local ArmsButton = createTypeButton("Arms", 0.06, 0.28, "18")
+local LegsButton = createTypeButton("Legs", 0.50, 0.28, "18")
+local BackButton = createTypeButton("Back", 0.06, 0.62, "18")
+local AgilityButton = createTypeButton("Agility", 0.50, 0.62, "18")
 
--- Set default
-ArmsButton.BackgroundColor3 = Color3.fromRGB(80, 150, 255)
+ArmsButton.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
 
--- Button click handlers
-local function updateTrainingType(btn, type)
+local function updateType(btn, type)
     btn.MouseButton1Click:Connect(function()
         selectedTrainingType = type
-        ArmsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        LegsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        BackButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        AgilityButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        btn.BackgroundColor3 = Color3.fromRGB(80, 150, 255)
+        ArmsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        LegsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        BackButton.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        AgilityButton.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        btn.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
     end)
 end
 
-updateTrainingType(ArmsButton, "arms")
-updateTrainingType(LegsButton, "legs")
-updateTrainingType(BackButton, "back")
-updateTrainingType(AgilityButton, "agility")
+updateType(ArmsButton, "arms")
+updateType(LegsButton, "legs")
+updateType(BackButton, "back")
+updateType(AgilityButton, "agility")
 
--- Speed Label
+-- Spam Intensity Control
+local IntensityFrame = Instance.new("Frame")
+IntensityFrame.Parent = ContentFrame
+IntensityFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+IntensityFrame.Position = UDim2.new(0.08, 0, 0.48, 0)
+IntensityFrame.Size = UDim2.new(0.84, 0, 0, 85)
+
+local IntCorner = Instance.new("UICorner")
+IntCorner.CornerRadius = UDim.new(0, 10)
+IntCorner.Parent = IntensityFrame
+
+local IntensityLabel = Instance.new("TextLabel")
+IntensityLabel.Parent = IntensityFrame
+IntensityLabel.BackgroundTransparency = 1
+IntensityLabel.Position = UDim2.new(0, 15, 0, 8)
+IntensityLabel.Size = UDim2.new(1, -30, 0, 25)
+IntensityLabel.Font = Enum.Font.GothamBold
+IntensityLabel.Text = "🔥 Spam Intensity: " .. spamIntensity .. "x/sec"
+IntensityLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
+IntensityLabel.TextSize = 14
+IntensityLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local IntensitySlider = Instance.new("TextButton")
+IntensitySlider.Parent = IntensityFrame
+IntensitySlider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+IntensitySlider.Position = UDim2.new(0.06, 0, 0.46, 0)
+IntensitySlider.Size = UDim2.new(0.88, 0, 0, 38)
+IntensitySlider.Font = Enum.Font.GothamBold
+IntensitySlider.Text = "Increase Intensity (10-200)"
+IntensitySlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+IntensitySlider.TextSize = 13
+
+local IntSliderCorner = Instance.new("UICorner")
+IntSliderCorner.CornerRadius = UDim.new(0, 8)
+IntSliderCorner.Parent = IntensitySlider
+
+IntensitySlider.MouseButton1Click:Connect(function()
+    spamIntensity = spamIntensity + 10
+    if spamIntensity > 200 then spamIntensity = 10 end
+    IntensityLabel.Text = "🔥 Spam Intensity: " .. spamIntensity .. "x/sec"
+    if spamIntensity >= 100 then
+        IntensityLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+    else
+        IntensityLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
+    end
+end)
+
+-- Speed Control
+local SpeedFrame = Instance.new("Frame")
+SpeedFrame.Parent = ContentFrame
+SpeedFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+SpeedFrame.Position = UDim2.new(0.08, 0, 0.65, 0)
+SpeedFrame.Size = UDim2.new(0.84, 0, 0, 85)
+
+local SpeedFrameCorner = Instance.new("UICorner")
+SpeedFrameCorner.CornerRadius = UDim.new(0, 10)
+SpeedFrameCorner.Parent = SpeedFrame
+
 local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Name = "SpeedLabel"
-SpeedLabel.Parent = ContentFrame
+SpeedLabel.Parent = SpeedFrame
 SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Position = UDim2.new(0.1, 0, 0.48, 0)
-SpeedLabel.Size = UDim2.new(0.8, 0, 0, 25)
+SpeedLabel.Position = UDim2.new(0, 15, 0, 8)
+SpeedLabel.Size = UDim2.new(1, -30, 0, 25)
 SpeedLabel.Font = Enum.Font.GothamBold
-SpeedLabel.Text = "Training Speed: " .. trainingSpeed
-SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedLabel.Text = "⚡ Training Speed: " .. trainingSpeed .. " (MAX)"
+SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 SpeedLabel.TextSize = 14
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Speed Button
 local SpeedSlider = Instance.new("TextButton")
-SpeedSlider.Name = "SpeedSlider"
-SpeedSlider.Parent = ContentFrame
-SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-SpeedSlider.Position = UDim2.new(0.1, 0, 0.54, 0)
-SpeedSlider.Size = UDim2.new(0.8, 0, 0, 30)
-SpeedSlider.Font = Enum.Font.Gotham
-SpeedSlider.Text = "Increase Speed +"
+SpeedSlider.Parent = SpeedFrame
+SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+SpeedSlider.Position = UDim2.new(0.06, 0, 0.46, 0)
+SpeedSlider.Size = UDim2.new(0.88, 0, 0, 38)
+SpeedSlider.Font = Enum.Font.GothamBold
+SpeedSlider.Text = "Adjust Speed (1-10)"
 SpeedSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedSlider.TextSize = 12
+SpeedSlider.TextSize = 13
 
-local SpeedCorner = Instance.new("UICorner")
-SpeedCorner.CornerRadius = UDim.new(0, 6)
-SpeedCorner.Parent = SpeedSlider
+local SpeedSliderCorner = Instance.new("UICorner")
+SpeedSliderCorner.CornerRadius = UDim.new(0, 8)
+SpeedSliderCorner.Parent = SpeedSlider
 
 SpeedSlider.MouseButton1Click:Connect(function()
     trainingSpeed = trainingSpeed + 1
     if trainingSpeed > 10 then trainingSpeed = 1 end
-    SpeedLabel.Text = "Training Speed: " .. trainingSpeed
+    SpeedLabel.Text = "⚡ Training Speed: " .. trainingSpeed .. (trainingSpeed == 10 and " (MAX)" or "")
+    SpeedLabel.TextColor3 = trainingSpeed == 10 and Color3.fromRGB(255, 255, 100) or Color3.fromRGB(255, 255, 255)
 end)
 
--- Delay Label
-local DelayLabel = Instance.new("TextLabel")
-DelayLabel.Name = "DelayLabel"
-DelayLabel.Parent = ContentFrame
-DelayLabel.BackgroundTransparency = 1
-DelayLabel.Position = UDim2.new(0.1, 0, 0.63, 0)
-DelayLabel.Size = UDim2.new(0.8, 0, 0, 25)
-DelayLabel.Font = Enum.Font.GothamBold
-DelayLabel.Text = "Delay (seconds):"
-DelayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-DelayLabel.TextSize = 14
-DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Delay Input
-local DelayInput = Instance.new("TextBox")
-DelayInput.Name = "DelayInput"
-DelayInput.Parent = ContentFrame
-DelayInput.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-DelayInput.Position = UDim2.new(0.1, 0, 0.69, 0)
-DelayInput.Size = UDim2.new(0.8, 0, 0, 30)
-DelayInput.Font = Enum.Font.Gotham
-DelayInput.PlaceholderText = "0.01 (recommended)"
-DelayInput.Text = "0.01"
-DelayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-DelayInput.TextSize = 13
-
-local DelayCorner = Instance.new("UICorner")
-DelayCorner.CornerRadius = UDim.new(0, 6)
-DelayCorner.Parent = DelayInput
-
-DelayInput.FocusLost:Connect(function()
-    local newDelay = tonumber(DelayInput.Text)
-    if newDelay and newDelay >= 0.01 then
-        trainingDelay = newDelay
-    else
-        DelayInput.Text = tostring(trainingDelay)
-    end
-end)
-
--- Combat Power Label
-local CombatPowerLabel = Instance.new("TextLabel")
-CombatPowerLabel.Name = "CombatPowerLabel"
-CombatPowerLabel.Parent = ContentFrame
-CombatPowerLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-CombatPowerLabel.Position = UDim2.new(0.1, 0, 0.81, 0)
-CombatPowerLabel.Size = UDim2.new(0.8, 0, 0, 35)
-CombatPowerLabel.Font = Enum.Font.GothamBold
-CombatPowerLabel.Text = "Combat Power: Loading..."
-CombatPowerLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-CombatPowerLabel.TextSize = 13
+-- Combat Power Display
+local CPFrame = Instance.new("Frame")
+CPFrame.Parent = ContentFrame
+CPFrame.BackgroundColor3 = Color3.fromRGB(40, 30, 50)
+CPFrame.Position = UDim2.new(0.08, 0, 0.82, 0)
+CPFrame.Size = UDim2.new(0.84, 0, 0, 50)
 
 local CPCorner = Instance.new("UICorner")
-CPCorner.CornerRadius = UDim.new(0, 6)
-CPCorner.Parent = CombatPowerLabel
+CPCorner.CornerRadius = UDim.new(0, 10)
+CPCorner.Parent = CPFrame
 
--- Update Combat Power
+local CombatPowerLabel = Instance.new("TextLabel")
+CombatPowerLabel.Parent = CPFrame
+CombatPowerLabel.BackgroundTransparency = 1
+CombatPowerLabel.Size = UDim2.new(1, 0, 1, 0)
+CombatPowerLabel.Font = Enum.Font.GothamBold
+CombatPowerLabel.Text = "💪 Combat Power: Loading..."
+CombatPowerLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+CombatPowerLabel.TextSize = 15
+
+-- Update Combat Power with animation
 spawn(function()
-    while wait(2) do
+    while wait(0.5) do
         pcall(function()
             local GetCombatPower = getRemote({"TrainSystem", "Bindable", "GetCombatPower"})
             if GetCombatPower then
                 local cp = GetCombatPower:Invoke(player)
                 if cp then
-                    CombatPowerLabel.Text = "Combat Power: " .. tostring(cp)
+                    local formatted = tostring(cp):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+                    CombatPowerLabel.Text = "💪 Combat Power: " .. formatted
+                    
+                    -- Color based on power
+                    if cp >= 1000000000000 then -- Trillion
+                        CombatPowerLabel.TextColor3 = Color3.fromRGB(255, 50, 255)
+                    elseif cp >= 1000000000 then -- Billion
+                        CombatPowerLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                    elseif cp >= 1000000 then -- Million
+                        CombatPowerLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+                    end
                 end
             end
         end)
     end
 end)
 
--- Minimize Function
-local function toggleMinimize()
-    isMinimized = not isMinimized
+-- Toggle Training Button
+SpamButton.MouseButton1Click:Connect(function()
+    autoTrainEnabled = not autoTrainEnabled
     
+    if autoTrainEnabled then
+        SpamButton.Text = "🛑 STOP ULTRA SPAM"
+        SpamButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+        StatusLabel.Text = "Status: ULTRA SPAM ACTIVE 🔥"
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        ultraSpamTrain()
+    else
+        SpamButton.Text = "🚀 START ULTRA SPAM"
+        SpamButton.BackgroundColor3 = Color3.fromRGB(255, 50, 150)
+        StatusLabel.Text = "Status: Inactive ⭕"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
+end)
+
+-- Minimize
+MinimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
     if isMinimized then
-        MainFrame:TweenSize(UDim2.new(0, 350, 0, 50), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+        MainFrame:TweenSize(UDim2.new(0, 400, 0, 55), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
         MinimizeButton.Text = "□"
         ContentFrame.Visible = false
     else
-        MainFrame:TweenSize(UDim2.new(0, 350, 0, 500), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+        MainFrame:TweenSize(UDim2.new(0, 400, 0, 550), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
         MinimizeButton.Text = "—"
         wait(0.1)
         ContentFrame.Visible = true
     end
-end
+end)
 
-MinimizeButton.MouseButton1Click:Connect(toggleMinimize)
-
--- Close Function
+-- Close
 CloseButton.MouseButton1Click:Connect(function()
     autoTrainEnabled = false
     MainFrame:TweenSize(UDim2.new(0, 0, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Back, 0.3, true)
@@ -428,24 +500,8 @@ CloseButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- Toggle Training
-ToggleButton.MouseButton1Click:Connect(function()
-    autoTrainEnabled = not autoTrainEnabled
-    
-    if autoTrainEnabled then
-        ToggleButton.Text = "STOP AUTO TRAIN"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-        StatusLabel.Text = "Status: Active ✅"
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        startAutoTrain()
-    else
-        ToggleButton.Text = "START AUTO TRAIN"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 180, 80)
-        StatusLabel.Text = "Status: Inactive ⭕"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    end
-end)
-
-print("✅ Auto Training Script Loaded Successfully!")
-print("📊 GUI Created - Ready to use")
-print("🎯 Drag title bar to move | — minimize | × close")
+print("✅ ULTRA SPAM TRAINER LOADED!")
+print("🔥 Spam Intensity: Up to 200x per second!")
+print("⚡ Training Speed: MAX 10")
+print("💪 Target: TRILLIONS of Combat Power!")
+print("🎯 Select element → Set intensity → START!")
