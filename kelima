@@ -1,17 +1,11 @@
 -- Auto Training Script untuk meningkatkan Combat Power
 -- Optimized for Delta Executor
+-- Fixed Version with Better Error Handling
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
-
--- Services
-local TrainSpeedHasChanged = ReplicatedStorage.TrainSystem.Remote.TrainSpeedHasChanged
-local ApplyMobileTrain = ReplicatedStorage.TrainEquipment.Remote.ApplyMobileTrain
-local ApplyStationaryTrain = ReplicatedStorage.TrainEquipment.Remote.ApplyStationaryTrain
-local ApplyBindingTrainingEffect = ReplicatedStorage.TrainEquipment.Remote.ApplyBindingTrainingEffect
-local ApplyBindingTrainingBoostEffect = ReplicatedStorage.TrainEquipment.Remote.ApplyBindingTrainingBoostEffect
 
 -- Variabel Global
 local autoTrainEnabled = false
@@ -20,7 +14,20 @@ local trainingSpeed = 4
 local trainingDelay = 0.01
 local isMinimized = false
 
--- Training Equipment IDs
+-- Safe function to get remote
+local function getRemote(path)
+    local success, result = pcall(function()
+        local current = ReplicatedStorage
+        for _, name in ipairs(path) do
+            current = current:FindFirstChild(name)
+            if not current then return nil end
+        end
+        return current
+    end)
+    return success and result or nil
+end
+
+-- Training Types
 local TrainingTypes = {
     arms = "Training_2001",
     legs = "Training_2002",
@@ -28,22 +35,46 @@ local TrainingTypes = {
     agility = "Training_2004"
 }
 
--- Fungsi Auto Train
+-- Fungsi Auto Train dengan Error Handling
 local function startAutoTrain()
     spawn(function()
         while autoTrainEnabled do
-            pcall(function()
-                ApplyMobileTrain:InvokeServer()
-                TrainSpeedHasChanged:FireServer(trainingSpeed)
+            local success = pcall(function()
+                -- Try to get remotes
+                local ApplyMobileTrain = getRemote({"TrainEquipment", "Remote", "ApplyMobileTrain"})
+                local TrainSpeedHasChanged = getRemote({"TrainSystem", "Remote", "TrainSpeedHasChanged"})
+                local ApplyBindingTrainingEffect = getRemote({"TrainEquipment", "Remote", "ApplyBindingTrainingEffect"})
+                local ApplyBindingTrainingBoostEffect = getRemote({"TrainEquipment", "Remote", "ApplyBindingTrainingBoostEffect"})
+                local ApplyStationaryTrain = getRemote({"TrainEquipment", "Remote", "ApplyStationaryTrain"})
                 
-                local trainingId = TrainingTypes[selectedTrainingType]
-                if trainingId then
-                    ApplyBindingTrainingEffect:InvokeServer(trainingId, "Emit_2")
+                -- Execute training
+                if ApplyMobileTrain then
+                    ApplyMobileTrain:InvokeServer()
                 end
                 
-                ApplyBindingTrainingBoostEffect:InvokeServer()
-                ApplyStationaryTrain:InvokeServer()
+                if TrainSpeedHasChanged then
+                    TrainSpeedHasChanged:FireServer(trainingSpeed)
+                end
+                
+                if ApplyBindingTrainingEffect then
+                    local trainingId = TrainingTypes[selectedTrainingType]
+                    if trainingId then
+                        ApplyBindingTrainingEffect:InvokeServer(trainingId, "Emit_2")
+                    end
+                end
+                
+                if ApplyBindingTrainingBoostEffect then
+                    ApplyBindingTrainingBoostEffect:InvokeServer()
+                end
+                
+                if ApplyStationaryTrain then
+                    ApplyStationaryTrain:InvokeServer()
+                end
             end)
+            
+            if not success then
+                warn("Training error - will retry")
+            end
             
             task.wait(trainingDelay)
         end
@@ -52,31 +83,20 @@ end
 
 -- GUI Creation
 local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local TitleBar = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local MinimizeButton = Instance.new("TextButton")
-local CloseButton = Instance.new("TextButton")
-local ContentFrame = Instance.new("Frame")
-local ToggleButton = Instance.new("TextButton")
-local StatusLabel = Instance.new("TextLabel")
-local SpeedLabel = Instance.new("TextLabel")
-local SpeedSlider = Instance.new("TextButton")
-local TrainTypeLabel = Instance.new("TextLabel")
-local ArmsButton = Instance.new("TextButton")
-local LegsButton = Instance.new("TextButton")
-local BackButton = Instance.new("TextButton")
-local AgilityButton = Instance.new("TextButton")
-local DelayLabel = Instance.new("TextLabel")
-local DelayInput = Instance.new("TextBox")
-local CombatPowerLabel = Instance.new("TextLabel")
-
--- ScreenGui
 ScreenGui.Name = "AutoTrainGUI"
+ScreenGui.ResetOnSpawn = false
+
+-- Check if GUI already exists
+local existingGui = game.CoreGui:FindFirstChild("AutoTrainGUI")
+if existingGui then
+    existingGui:Destroy()
+end
+
 ScreenGui.Parent = game.CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- Main Frame
+local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
@@ -90,19 +110,56 @@ MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
 -- Title Bar
+local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Parent = MainFrame
 TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 TitleBar.BorderSizePixel = 0
 TitleBar.Size = UDim2.new(1, 0, 0, 50)
-TitleBar.Active = true
-TitleBar.Draggable = true
 
 local TitleCorner = Instance.new("UICorner")
 TitleCorner.CornerRadius = UDim.new(0, 12)
 TitleCorner.Parent = TitleBar
 
+-- Make draggable
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TitleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
 -- Title
+local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Parent = TitleBar
 Title.BackgroundTransparency = 1
@@ -115,6 +172,7 @@ Title.TextSize = 18
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Minimize Button
+local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Parent = TitleBar
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
@@ -130,6 +188,7 @@ MinCorner.CornerRadius = UDim.new(0, 6)
 MinCorner.Parent = MinimizeButton
 
 -- Close Button
+local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
 CloseButton.Parent = TitleBar
 CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
@@ -145,6 +204,7 @@ CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseButton
 
 -- Content Frame
+local ContentFrame = Instance.new("Frame")
 ContentFrame.Name = "ContentFrame"
 ContentFrame.Parent = MainFrame
 ContentFrame.BackgroundTransparency = 1
@@ -152,6 +212,7 @@ ContentFrame.Position = UDim2.new(0, 0, 0, 50)
 ContentFrame.Size = UDim2.new(1, 0, 1, -50)
 
 -- Status Label
+local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Parent = ContentFrame
 StatusLabel.BackgroundTransparency = 1
@@ -163,6 +224,7 @@ StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 StatusLabel.TextSize = 14
 
 -- Toggle Button
+local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "ToggleButton"
 ToggleButton.Parent = ContentFrame
 ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 180, 80)
@@ -177,7 +239,8 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
--- Training Type Selection
+-- Training Type Label
+local TrainTypeLabel = Instance.new("TextLabel")
 TrainTypeLabel.Name = "TrainTypeLabel"
 TrainTypeLabel.Parent = ContentFrame
 TrainTypeLabel.BackgroundTransparency = 1
@@ -189,7 +252,7 @@ TrainTypeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TrainTypeLabel.TextSize = 14
 TrainTypeLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Function to create training type buttons
+-- Training Type Buttons
 local function createTypeButton(name, position, yPos)
     local btn = Instance.new("TextButton")
     btn.Name = name .. "Button"
@@ -206,25 +269,36 @@ local function createTypeButton(name, position, yPos)
     btnCorner.CornerRadius = UDim.new(0, 6)
     btnCorner.Parent = btn
     
+    return btn
+end
+
+local ArmsButton = createTypeButton("Arms", 0.1, 0.28)
+local LegsButton = createTypeButton("Legs", 0.55, 0.28)
+local BackButton = createTypeButton("Back", 0.1, 0.37)
+local AgilityButton = createTypeButton("Agility", 0.55, 0.37)
+
+-- Set default
+ArmsButton.BackgroundColor3 = Color3.fromRGB(80, 150, 255)
+
+-- Button click handlers
+local function updateTrainingType(btn, type)
     btn.MouseButton1Click:Connect(function()
-        selectedTrainingType = name:lower()
+        selectedTrainingType = type
         ArmsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         LegsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         BackButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         AgilityButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         btn.BackgroundColor3 = Color3.fromRGB(80, 150, 255)
     end)
-    
-    return btn
 end
 
-ArmsButton = createTypeButton("Arms", 0.1, 0.28)
-LegsButton = createTypeButton("Legs", 0.55, 0.28)
-BackButton = createTypeButton("Back", 0.1, 0.37)
-AgilityButton = createTypeButton("Agility", 0.55, 0.37)
-ArmsButton.BackgroundColor3 = Color3.fromRGB(80, 150, 255)
+updateTrainingType(ArmsButton, "arms")
+updateTrainingType(LegsButton, "legs")
+updateTrainingType(BackButton, "back")
+updateTrainingType(AgilityButton, "agility")
 
--- Speed Controls
+-- Speed Label
+local SpeedLabel = Instance.new("TextLabel")
 SpeedLabel.Name = "SpeedLabel"
 SpeedLabel.Parent = ContentFrame
 SpeedLabel.BackgroundTransparency = 1
@@ -236,6 +310,8 @@ SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpeedLabel.TextSize = 14
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Speed Button
+local SpeedSlider = Instance.new("TextButton")
 SpeedSlider.Name = "SpeedSlider"
 SpeedSlider.Parent = ContentFrame
 SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
@@ -256,7 +332,8 @@ SpeedSlider.MouseButton1Click:Connect(function()
     SpeedLabel.Text = "Training Speed: " .. trainingSpeed
 end)
 
--- Delay Input
+-- Delay Label
+local DelayLabel = Instance.new("TextLabel")
 DelayLabel.Name = "DelayLabel"
 DelayLabel.Parent = ContentFrame
 DelayLabel.BackgroundTransparency = 1
@@ -268,6 +345,8 @@ DelayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 DelayLabel.TextSize = 14
 DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Delay Input
+local DelayInput = Instance.new("TextBox")
 DelayInput.Name = "DelayInput"
 DelayInput.Parent = ContentFrame
 DelayInput.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
@@ -292,7 +371,8 @@ DelayInput.FocusLost:Connect(function()
     end
 end)
 
--- Combat Power Display
+-- Combat Power Label
+local CombatPowerLabel = Instance.new("TextLabel")
 CombatPowerLabel.Name = "CombatPowerLabel"
 CombatPowerLabel.Parent = ContentFrame
 CombatPowerLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
@@ -307,68 +387,48 @@ local CPCorner = Instance.new("UICorner")
 CPCorner.CornerRadius = UDim.new(0, 6)
 CPCorner.Parent = CombatPowerLabel
 
--- Shadow Effect
-local Shadow = Instance.new("ImageLabel")
-Shadow.Name = "Shadow"
-Shadow.Parent = MainFrame
-Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-Shadow.BackgroundTransparency = 1
-Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-Shadow.Size = UDim2.new(1, 30, 1, 30)
-Shadow.ZIndex = 0
-Shadow.Image = "rbxassetid://6014261993"
-Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-Shadow.ImageTransparency = 0.5
-
--- Update Combat Power Display
+-- Update Combat Power
 spawn(function()
-    while wait(1) do
+    while wait(2) do
         pcall(function()
-            local GetCombatPower = ReplicatedStorage.TrainSystem.Bindable.GetCombatPower
-            local cp = GetCombatPower:Invoke(player)
-            if cp then
-                CombatPowerLabel.Text = "Combat Power: " .. tostring(cp)
+            local GetCombatPower = getRemote({"TrainSystem", "Bindable", "GetCombatPower"})
+            if GetCombatPower then
+                local cp = GetCombatPower:Invoke(player)
+                if cp then
+                    CombatPowerLabel.Text = "Combat Power: " .. tostring(cp)
+                end
             end
         end)
     end
 end)
 
--- Minimize/Maximize Function
+-- Minimize Function
 local function toggleMinimize()
     isMinimized = not isMinimized
     
-    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-    
     if isMinimized then
-        local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 350, 0, 50)})
-        sizeTween:Play()
+        MainFrame:TweenSize(UDim2.new(0, 350, 0, 50), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
         MinimizeButton.Text = "□"
         ContentFrame.Visible = false
     else
-        local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 350, 0, 500)})
-        sizeTween:Play()
+        MainFrame:TweenSize(UDim2.new(0, 350, 0, 500), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
         MinimizeButton.Text = "—"
         wait(0.1)
         ContentFrame.Visible = true
     end
 end
 
--- Minimize Button Click
-MinimizeButton.MouseButton1Click:Connect(function()
-    toggleMinimize()
-end)
+MinimizeButton.MouseButton1Click:Connect(toggleMinimize)
 
--- Close Button Click
+-- Close Function
 CloseButton.MouseButton1Click:Connect(function()
     autoTrainEnabled = false
-    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 0, 0, 0)})
-    sizeTween:Play()
+    MainFrame:TweenSize(UDim2.new(0, 0, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Back, 0.3, true)
     wait(0.3)
     ScreenGui:Destroy()
 end)
 
--- Toggle Functionality
+-- Toggle Training
 ToggleButton.MouseButton1Click:Connect(function()
     autoTrainEnabled = not autoTrainEnabled
     
@@ -386,20 +446,6 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Button Hover Effects
-local function addHoverEffect(button, hoverColor, normalColor)
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
-    end)
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = normalColor}):Play()
-    end)
-end
-
-addHoverEffect(CloseButton, Color3.fromRGB(255, 70, 70), Color3.fromRGB(220, 50, 50))
-addHoverEffect(MinimizeButton, Color3.fromRGB(255, 200, 50), Color3.fromRGB(255, 180, 0))
-
-print("✅ Auto Training Script Loaded!")
-print("📊 GUI Created with Minimize/Close buttons")
-print("⚡ Configure settings and press START")
-print("🎯 Drag title bar to move | — to minimize | × to close")
+print("✅ Auto Training Script Loaded Successfully!")
+print("📊 GUI Created - Ready to use")
+print("🎯 Drag title bar to move | — minimize | × close")
