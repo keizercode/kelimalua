@@ -1,5 +1,5 @@
--- Base Value Modifier - NO THREAD ERRORS
--- 100% Thread-Safe dengan Queue System
+-- Base Value Modifier - UNIVERSAL HOOK
+-- Menangkap SEMUA training tanpa filter ketat
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,7 +19,7 @@ local Stats = {
     LastGain = 0
 }
 
--- QUEUE SYSTEM - Untuk update UI yang aman
+-- Queue untuk update UI
 local updateQueue = {}
 
 -- Helper
@@ -269,21 +269,17 @@ restoreBtn.Font = Enum.Font.GothamBold
 restoreBtn.BorderSizePixel = 0
 Instance.new("UICorner", restoreBtn).CornerRadius = UDim.new(0, 5)
 
--- THREAD-SAFE UPDATE FUNCTION
+-- THREAD-SAFE UPDATE
 local function QueueStatsUpdate()
-    -- Tambahkan ke queue, bukan langsung update UI
     table.insert(updateQueue, {
         statsText = string.format("🎯 Trained: %d | Last: +%s", 
             Stats.TrainCount, FormatNumber(Stats.LastGain))
     })
 end
 
--- Process queue di main thread (RenderStepped)
 RunService.RenderStepped:Connect(function()
     if #updateQueue > 0 then
         local update = table.remove(updateQueue, 1)
-        
-        -- Update UI dengan pcall untuk safety
         pcall(function()
             if update.statsText then
                 statsLabel.Text = update.statsText
@@ -345,7 +341,7 @@ autoBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CORE HOOKING - 100% THREAD SAFE
+-- UNIVERSAL HOOK - Tangkap SEMUA InvokeServer
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     if not Settings.Enabled then
@@ -353,52 +349,74 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     end
     
     local method = getnamecallmethod()
+    local args = {...}
     
-    -- Hook InvokeServer - Return base value
+    -- Hook semua InvokeServer
     if method == "InvokeServer" then
-        local name = tostring(self)
+        -- Panggil original dulu untuk dapat hasil asli
+        local results = {oldNamecall(self, ...)}
         
-        -- Untuk training remotes
-        if name:find("Train") or name:find("Apply") then
-            -- Update stats tanpa akses UI langsung
-            Stats.TrainCount = Stats.TrainCount + 1
-            Stats.LastGain = Settings.BaseValue
-            QueueStatsUpdate() -- Pakai queue bukan langsung
+        -- Cek apakah ini training (hasil berupa number kecil)
+        if results[1] and type(results[1]) == "number" then
+            local originalValue = results[1]
             
-            return Settings.BaseValue
+            -- Hanya modifikasi jika nilai asli masuk akal untuk training (10 - 100000)
+            if originalValue >= 10 and originalValue <= 100000 then
+                -- Ganti dengan base value kita
+                results[1] = Settings.BaseValue
+                
+                Stats.TrainCount = Stats.TrainCount + 1
+                Stats.LastGain = Settings.BaseValue
+                QueueStatsUpdate()
+                
+                print(string.format("[HOOKED] %s: %d → %d", tostring(self), originalValue, Settings.BaseValue))
+            end
         end
+        
+        return unpack(results)
     end
     
     return oldNamecall(self, ...)
 end)
 
--- Hook BindableFunction - THREAD SAFE
+-- Hook semua BindableFunction di ReplicatedStorage
 task.spawn(function()
-    task.wait(1)
+    task.wait(2)
     
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+    local function HookBindable(obj)
         if obj:IsA("BindableFunction") then
-            local name = obj.Name
-            
-            if name:find("Train") or name:find("GetValue") or name:find("Combat") then
-                pcall(function()
-                    local oldInvoke = obj.OnInvoke
+            pcall(function()
+                local oldInvoke = obj.OnInvoke
+                
+                obj.OnInvoke = function(...)
+                    if not Settings.Enabled then
+                        return oldInvoke(...)
+                    end
                     
-                    obj.OnInvoke = function(...)
-                        if not Settings.Enabled then
-                            return oldInvoke(...)
-                        end
-                        
-                        -- Update stats dengan queue
+                    local result = oldInvoke(...)
+                    
+                    -- Jika hasil berupa number kecil, ganti dengan base value
+                    if type(result) == "number" and result >= 10 and result <= 100000 then
                         Stats.LastGain = Settings.BaseValue
                         QueueStatsUpdate()
                         
+                        print(string.format("[BINDABLE HOOKED] %s: %d → %d", obj.Name, result, Settings.BaseValue))
                         return Settings.BaseValue
                     end
-                end)
-            end
+                    
+                    return result
+                end
+            end)
         end
     end
+    
+    -- Hook existing
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        HookBindable(obj)
+    end
+    
+    -- Hook new objects
+    ReplicatedStorage.DescendantAdded:Connect(HookBindable)
 end)
 
 -- Auto Train Loop
@@ -422,11 +440,11 @@ task.spawn(function()
 end)
 
 -- Initialize
-Notify("Loaded! Set value & activate!")
+Notify("Loaded! Press E to train!")
 
 print("==========================================")
-print("⚡ BASE VALUE MODIFIER - NO ERRORS!")
+print("⚡ BASE VALUE MODIFIER - UNIVERSAL!")
 print("==========================================")
-print("💎 100% Thread-Safe dengan Queue System")
-print("🚀 Set value, lalu activate")
+print("💎 Hooks SEMUA training events")
+print("🚀 Tekan E untuk training")
 print("==========================================")
