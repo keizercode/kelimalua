@@ -1,5 +1,5 @@
--- Base Value Modifier - UNIVERSAL HOOK
--- Menangkap SEMUA training tanpa filter ketat
+-- Training Multiplier - DEEP HOOK
+-- Hook di level lebih dalam untuk benar-benar mengubah nilai
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,17 +9,16 @@ local player = Players.LocalPlayer
 
 -- Settings
 local Settings = {
-    BaseValue = 1000000,
+    Multiplier = 5556, -- Multiplier mode
     Enabled = false,
     AutoTrain = false
 }
 
 local Stats = {
     TrainCount = 0,
-    LastGain = 0
+    TotalBoosted = 0
 }
 
--- Queue untuk update UI
 local updateQueue = {}
 
 -- Helper
@@ -34,7 +33,7 @@ end
 local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "⚡ Base Modifier";
+            Title = "⚡ Training Booster";
             Text = text;
             Duration = 2;
         })
@@ -43,7 +42,7 @@ end
 
 -- Create GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "BaseModifierGUI"
+gui.Name = "TrainingBoosterGUI"
 gui.ResetOnSpawn = false
 pcall(function() gui.Parent = game:GetService("CoreGui") end)
 if not gui.Parent then gui.Parent = player:WaitForChild("PlayerGui") end
@@ -58,9 +57,7 @@ main.Active = true
 main.Draggable = true
 main.Parent = gui
 
-local mainCorner = Instance.new("UICorner", main)
-mainCorner.CornerRadius = UDim.new(0, 10)
-
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
 local mainStroke = Instance.new("UIStroke", main)
 mainStroke.Color = Color3.fromRGB(100, 100, 255)
 mainStroke.Thickness = 2
@@ -70,17 +67,15 @@ local topBar = Instance.new("Frame", main)
 topBar.Size = UDim2.new(1, 0, 0, 40)
 topBar.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 topBar.BorderSizePixel = 0
-
-local topCorner = Instance.new("UICorner", topBar)
-topCorner.CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 10)
 
 local title = Instance.new("TextLabel", topBar)
 title.Size = UDim2.new(1, -70, 1, 0)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "⚡ BASE MODIFIER"
+title.Text = "⚡ TRAINING BOOSTER"
 title.TextColor3 = Color3.fromRGB(100, 200, 255)
-title.TextSize = 16
+title.TextSize = 15
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -112,7 +107,7 @@ content.Size = UDim2.new(1, -20, 1, -50)
 content.Position = UDim2.new(0, 10, 0, 45)
 content.BackgroundTransparency = 1
 
--- Status Display
+-- Status
 local statusBox = Instance.new("Frame", content)
 statusBox.Size = UDim2.new(1, 0, 0, 60)
 statusBox.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
@@ -129,56 +124,56 @@ statusLabel.TextSize = 14
 statusLabel.Font = Enum.Font.GothamBold
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-local valueLabel = Instance.new("TextLabel", statusBox)
-valueLabel.Size = UDim2.new(1, -10, 0, 18)
-valueLabel.Position = UDim2.new(0, 5, 0, 25)
-valueLabel.BackgroundTransparency = 1
-valueLabel.Text = "💎 Base: 1.00M per train"
-valueLabel.TextColor3 = Color3.fromRGB(100, 255, 200)
-valueLabel.TextSize = 12
-valueLabel.Font = Enum.Font.GothamBold
-valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+local multLabel = Instance.new("TextLabel", statusBox)
+multLabel.Size = UDim2.new(1, -10, 0, 18)
+multLabel.Position = UDim2.new(0, 5, 0, 25)
+multLabel.BackgroundTransparency = 1
+multLabel.Text = "💎 180 → 1.00M per train"
+multLabel.TextColor3 = Color3.fromRGB(100, 255, 200)
+multLabel.TextSize = 12
+multLabel.Font = Enum.Font.GothamBold
+multLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local statsLabel = Instance.new("TextLabel", statusBox)
 statsLabel.Size = UDim2.new(1, -10, 0, 15)
 statsLabel.Position = UDim2.new(0, 5, 0, 42)
 statsLabel.BackgroundTransparency = 1
-statsLabel.Text = "🎯 Trained: 0 | Last: +0"
+statsLabel.Text = "🎯 Sessions: 0 | Boosted: +0"
 statsLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
 statsLabel.TextSize = 10
 statsLabel.Font = Enum.Font.Gotham
 statsLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Value Settings
-local valueBox = Instance.new("Frame", content)
-valueBox.Size = UDim2.new(1, 0, 0, 70)
-valueBox.Position = UDim2.new(0, 0, 0, 68)
-valueBox.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-valueBox.BorderSizePixel = 0
-Instance.new("UICorner", valueBox).CornerRadius = UDim.new(0, 8)
+-- Multiplier Settings
+local multBox = Instance.new("Frame", content)
+multBox.Size = UDim2.new(1, 0, 0, 70)
+multBox.Position = UDim2.new(0, 0, 0, 68)
+multBox.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+multBox.BorderSizePixel = 0
+Instance.new("UICorner", multBox).CornerRadius = UDim.new(0, 8)
 
-local valueTitle = Instance.new("TextLabel", valueBox)
-valueTitle.Size = UDim2.new(1, -10, 0, 22)
-valueTitle.Position = UDim2.new(0, 5, 0, 5)
-valueTitle.BackgroundTransparency = 1
-valueTitle.Text = "⚙️ BASE VALUE: 1.00M"
-valueTitle.TextColor3 = Color3.fromRGB(255, 200, 100)
-valueTitle.TextSize = 14
-valueTitle.Font = Enum.Font.GothamBold
-valueTitle.TextXAlignment = Enum.TextXAlignment.Left
+local multTitle = Instance.new("TextLabel", multBox)
+multTitle.Size = UDim2.new(1, -10, 0, 22)
+multTitle.Position = UDim2.new(0, 5, 0, 5)
+multTitle.BackgroundTransparency = 1
+multTitle.Text = "⚙️ MULTIPLIER: x5.56K"
+multTitle.TextColor3 = Color3.fromRGB(255, 200, 100)
+multTitle.TextSize = 14
+multTitle.Font = Enum.Font.GothamBold
+multTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-local valueInfo = Instance.new("TextLabel", valueBox)
-valueInfo.Size = UDim2.new(1, -10, 0, 16)
-valueInfo.Position = UDim2.new(0, 5, 0, 27)
-valueInfo.BackgroundTransparency = 1
-valueInfo.Text = "Training akan return nilai ini"
-valueInfo.TextColor3 = Color3.fromRGB(180, 180, 200)
-valueInfo.TextSize = 10
-valueInfo.Font = Enum.Font.Gotham
-valueInfo.TextXAlignment = Enum.TextXAlignment.Left
+local multInfo = Instance.new("TextLabel", multBox)
+multInfo.Size = UDim2.new(1, -10, 0, 16)
+multInfo.Position = UDim2.new(0, 5, 0, 27)
+multInfo.BackgroundTransparency = 1
+multInfo.Text = "Boost training gains"
+multInfo.TextColor3 = Color3.fromRGB(180, 180, 200)
+multInfo.TextSize = 10
+multInfo.Font = Enum.Font.Gotham
+multInfo.TextXAlignment = Enum.TextXAlignment.Left
 
--- Preset Buttons
-local presetFrame = Instance.new("Frame", valueBox)
+-- Presets
+local presetFrame = Instance.new("Frame", multBox)
 presetFrame.Size = UDim2.new(1, -10, 0, 22)
 presetFrame.Position = UDim2.new(0, 5, 0, 43)
 presetFrame.BackgroundTransparency = 1
@@ -196,18 +191,16 @@ local function CreatePresetBtn(text, pos, value)
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
     
     btn.MouseButton1Click:Connect(function()
-        Settings.BaseValue = value
-        valueTitle.Text = string.format("⚙️ BASE VALUE: %s", FormatNumber(value))
-        valueLabel.Text = string.format("💎 Base: %s per train", FormatNumber(value))
-        Notify(string.format("Set to %s!", FormatNumber(value)))
+        Settings.Multiplier = value
+        multTitle.Text = string.format("⚙️ MULTIPLIER: x%s", FormatNumber(value))
+        multLabel.Text = string.format("💎 180 → %s per train", FormatNumber(180 * value))
+        Notify(string.format("Set to %s per train!", FormatNumber(180 * value)))
     end)
-    
-    return btn
 end
 
-CreatePresetBtn("1M", 0, 1000000)
-CreatePresetBtn("10M", 0.345, 10000000)
-CreatePresetBtn("100M", 0.69, 100000000)
+CreatePresetBtn("1M", 0, 5556)
+CreatePresetBtn("10M", 0.345, 55556)
+CreatePresetBtn("100M", 0.69, 555556)
 
 -- Enable Button
 local enableBtn = Instance.new("TextButton", content)
@@ -237,7 +230,7 @@ autoBtn.Font = Enum.Font.GothamBold
 autoBtn.BorderSizePixel = 0
 Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0, 8)
 
--- Minimized Version
+-- Minimized
 local minimized = Instance.new("Frame", gui)
 minimized.Size = UDim2.new(0, 180, 0, 40)
 minimized.Position = UDim2.new(0.5, -90, 0, 10)
@@ -252,7 +245,7 @@ local minLabel = Instance.new("TextLabel", minimized)
 minLabel.Size = UDim2.new(1, -40, 1, 0)
 minLabel.Position = UDim2.new(0, 8, 0, 0)
 minLabel.BackgroundTransparency = 1
-minLabel.Text = "⚡ BASE MODIFIER"
+minLabel.Text = "⚡ BOOSTER"
 minLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
 minLabel.TextSize = 13
 minLabel.Font = Enum.Font.GothamBold
@@ -269,11 +262,11 @@ restoreBtn.Font = Enum.Font.GothamBold
 restoreBtn.BorderSizePixel = 0
 Instance.new("UICorner", restoreBtn).CornerRadius = UDim.new(0, 5)
 
--- THREAD-SAFE UPDATE
+-- Update Queue
 local function QueueStatsUpdate()
     table.insert(updateQueue, {
-        statsText = string.format("🎯 Trained: %d | Last: +%s", 
-            Stats.TrainCount, FormatNumber(Stats.LastGain))
+        statsText = string.format("🎯 Sessions: %d | Boosted: +%s", 
+            Stats.TrainCount, FormatNumber(Stats.TotalBoosted))
     })
 end
 
@@ -288,7 +281,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Button Connections
+-- Buttons
 minBtn.MouseButton1Click:Connect(function()
     main.Visible = false
     minimized.Visible = true
@@ -341,97 +334,110 @@ autoBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- UNIVERSAL HOOK - Tangkap SEMUA InvokeServer
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+-- DEEP HOOK - Hook di level RemoteFunction & BindableFunction
+local hookedRemotes = {}
+
+local function DeepHookRemote(remote)
+    if hookedRemotes[remote] then return end
+    hookedRemotes[remote] = true
+    
+    if remote:IsA("RemoteFunction") then
+        local oldInvoke = remote.InvokeServer
+        remote.InvokeServer = function(self, ...)
+            local result = oldInvoke(self, ...)
+            
+            if Settings.Enabled and type(result) == "number" and result > 0 and result < 10000 then
+                local boosted = result * Settings.Multiplier
+                Stats.TrainCount = Stats.TrainCount + 1
+                Stats.TotalBoosted = Stats.TotalBoosted + (boosted - result)
+                QueueStatsUpdate()
+                
+                return boosted
+            end
+            
+            return result
+        end
+    end
+end
+
+local function DeepHookBindable(bindable)
+    if hookedRemotes[bindable] then return end
+    hookedRemotes[bindable] = true
+    
+    if bindable:IsA("BindableFunction") then
+        pcall(function()
+            local oldInvoke = bindable.OnInvoke
+            bindable.OnInvoke = function(...)
+                local result = oldInvoke(...)
+                
+                if Settings.Enabled and type(result) == "number" and result > 0 and result < 10000 then
+                    local boosted = result * Settings.Multiplier
+                    Stats.TotalBoosted = Stats.TotalBoosted + (boosted - result)
+                    QueueStatsUpdate()
+                    
+                    return boosted
+                end
+                
+                return result
+            end
+        end)
+    end
+end
+
+-- Hook existing dan baru
+task.spawn(function()
+    task.wait(2)
+    
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        DeepHookRemote(obj)
+        DeepHookBindable(obj)
+    end
+    
+    ReplicatedStorage.DescendantAdded:Connect(function(obj)
+        task.wait(0.1)
+        DeepHookRemote(obj)
+        DeepHookBindable(obj)
+    end)
+end)
+
+-- NAMECALL HOOK - Backup hook
+local oldnc
+oldnc = hookmetamethod(game, "__namecall", function(self, ...)
     if not Settings.Enabled then
-        return oldNamecall(self, ...)
+        return oldnc(self, ...)
     end
     
     local method = getnamecallmethod()
-    local args = {...}
     
-    -- Hook semua InvokeServer
-    if method == "InvokeServer" then
-        -- Panggil original dulu untuk dapat hasil asli
-        local results = {oldNamecall(self, ...)}
+    if method == "InvokeServer" or method == "Invoke" then
+        local results = {oldnc(self, ...)}
         
-        -- Cek apakah ini training (hasil berupa number kecil)
-        if results[1] and type(results[1]) == "number" then
-            local originalValue = results[1]
+        if results[1] and type(results[1]) == "number" and results[1] > 0 and results[1] < 10000 then
+            local original = results[1]
+            results[1] = results[1] * Settings.Multiplier
             
-            -- Hanya modifikasi jika nilai asli masuk akal untuk training (10 - 100000)
-            if originalValue >= 10 and originalValue <= 100000 then
-                -- Ganti dengan base value kita
-                results[1] = Settings.BaseValue
-                
-                Stats.TrainCount = Stats.TrainCount + 1
-                Stats.LastGain = Settings.BaseValue
-                QueueStatsUpdate()
-                
-                print(string.format("[HOOKED] %s: %d → %d", tostring(self), originalValue, Settings.BaseValue))
-            end
+            Stats.TrainCount = Stats.TrainCount + 1
+            Stats.TotalBoosted = Stats.TotalBoosted + (results[1] - original)
+            QueueStatsUpdate()
         end
         
         return unpack(results)
     end
     
-    return oldNamecall(self, ...)
+    return oldnc(self, ...)
 end)
 
--- Hook semua BindableFunction di ReplicatedStorage
-task.spawn(function()
-    task.wait(2)
-    
-    local function HookBindable(obj)
-        if obj:IsA("BindableFunction") then
-            pcall(function()
-                local oldInvoke = obj.OnInvoke
-                
-                obj.OnInvoke = function(...)
-                    if not Settings.Enabled then
-                        return oldInvoke(...)
-                    end
-                    
-                    local result = oldInvoke(...)
-                    
-                    -- Jika hasil berupa number kecil, ganti dengan base value
-                    if type(result) == "number" and result >= 10 and result <= 100000 then
-                        Stats.LastGain = Settings.BaseValue
-                        QueueStatsUpdate()
-                        
-                        print(string.format("[BINDABLE HOOKED] %s: %d → %d", obj.Name, result, Settings.BaseValue))
-                        return Settings.BaseValue
-                    end
-                    
-                    return result
-                end
-            end)
-        end
-    end
-    
-    -- Hook existing
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-        HookBindable(obj)
-    end
-    
-    -- Hook new objects
-    ReplicatedStorage.DescendantAdded:Connect(HookBindable)
-end)
-
--- Auto Train Loop
+-- Auto Train
 task.spawn(function()
     while task.wait(0.5) do
         if Settings.Enabled and Settings.AutoTrain then
             pcall(function()
-                local trainRemote = ReplicatedStorage:FindFirstChild("TrainEquipment")
-                if trainRemote then
-                    local remote = trainRemote:FindFirstChild("Remote")
-                    if remote then
-                        local stationaryTrain = remote:FindFirstChild("ApplyStationaryTrain")
-                        if stationaryTrain then
-                            stationaryTrain:InvokeServer()
-                        end
+                local te = ReplicatedStorage:FindFirstChild("TrainEquipment")
+                if te then
+                    local r = te:FindFirstChild("Remote")
+                    if r then
+                        local st = r:FindFirstChild("ApplyStationaryTrain")
+                        if st then st:InvokeServer() end
                     end
                 end
             end)
@@ -439,12 +445,5 @@ task.spawn(function()
     end
 end)
 
--- Initialize
-Notify("Loaded! Press E to train!")
-
-print("==========================================")
-print("⚡ BASE VALUE MODIFIER - UNIVERSAL!")
-print("==========================================")
-print("💎 Hooks SEMUA training events")
-print("🚀 Tekan E untuk training")
-print("==========================================")
+Notify("Loaded! Activate & train!")
+print("⚡ Training Booster Loaded!")
