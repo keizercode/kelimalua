@@ -1,0 +1,749 @@
+-- Training Points Multiplier - EXTREME BOOST VERSION
+-- Minimal 1 Juta per training, bisa sampai ratusan juta!
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Settings - EXTREME VALUES
+local Settings = {
+    GainMultiplier = 5556, -- Default: +180 → +1,000,080 (1 juta lebih!)
+    AutoTrain = false,
+    Enabled = false,
+    BoostCombatPower = true
+}
+
+local Stats = {
+    TotalGains = 0,
+    TrainingSessions = 0,
+    CombatPowerGained = 0
+}
+
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ExtremeBoosterGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+pcall(function()
+    ScreenGui.Parent = game:GetService("CoreGui")
+end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = playerGui
+end
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 400, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -210)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 15)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(255, 100, 255)
+MainStroke.Thickness = 3
+MainStroke.Parent = MainFrame
+
+local MainGradient = Instance.new("UIGradient")
+MainGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 10, 30)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 20))
+}
+MainGradient.Rotation = 45
+MainGradient.Parent = MainFrame
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 55)
+TopBar.BackgroundColor3 = Color3.fromRGB(30, 15, 40)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 15)
+TopBarCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "⚡ EXTREME BOOSTER"
+Title.TextColor3 = Color3.fromRGB(255, 100, 255)
+Title.TextSize = 22
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 35, 0, 35)
+MinimizeBtn.Position = UDim2.new(1, -75, 0, 10)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
+MinimizeBtn.Text = "−"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 24
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.BorderSizePixel = 0
+MinimizeBtn.Parent = TopBar
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 10)
+MinCorner.Parent = MinimizeBtn
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 35, 0, 35)
+CloseBtn.Position = UDim2.new(1, -38, 0, 10)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 100)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 20
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Parent = TopBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 10)
+CloseCorner.Parent = CloseBtn
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -28, 1, -68)
+Content.Position = UDim2.new(0, 14, 0, 60)
+Content.BackgroundTransparency = 1
+Content.Parent = MainFrame
+
+-- Status Frame
+local StatusFrame = Instance.new("Frame")
+StatusFrame.Size = UDim2.new(1, 0, 0, 95)
+StatusFrame.BackgroundColor3 = Color3.fromRGB(25, 15, 35)
+StatusFrame.BorderSizePixel = 0
+StatusFrame.Parent = Content
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 12)
+StatusCorner.Parent = StatusFrame
+
+local StatusStroke = Instance.new("UIStroke")
+StatusStroke.Color = Color3.fromRGB(100, 50, 150)
+StatusStroke.Thickness = 2
+StatusStroke.Transparency = 0.5
+StatusStroke.Parent = StatusFrame
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, -16, 0, 30)
+StatusLabel.Position = UDim2.new(0, 8, 0, 8)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "⭕ INACTIVE"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 150, 150)
+StatusLabel.TextSize = 18
+StatusLabel.Font = Enum.Font.GothamBold
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Parent = StatusFrame
+
+local StatsLabel = Instance.new("TextLabel")
+StatsLabel.Size = UDim2.new(1, -16, 0, 22)
+StatsLabel.Position = UDim2.new(0, 8, 0, 40)
+StatsLabel.BackgroundTransparency = 1
+StatsLabel.Text = "💎 +180 → +1.00M per training"
+StatsLabel.TextColor3 = Color3.fromRGB(100, 255, 255)
+StatsLabel.TextSize = 14
+StatsLabel.Font = Enum.Font.GothamBold
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatsLabel.Parent = StatusFrame
+
+local SessionLabel = Instance.new("TextLabel")
+SessionLabel.Size = UDim2.new(1, -16, 0, 18)
+SessionLabel.Position = UDim2.new(0, 8, 0, 64)
+SessionLabel.BackgroundTransparency = 1
+SessionLabel.Text = "🎯 Sessions: 0 | Boosted: +0"
+SessionLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
+SessionLabel.TextSize = 12
+SessionLabel.Font = Enum.Font.Gotham
+SessionLabel.TextXAlignment = Enum.TextXAlignment.Left
+SessionLabel.Parent = StatusFrame
+
+local CombatLabel = Instance.new("TextLabel")
+CombatLabel.Size = UDim2.new(1, -16, 0, 18)
+CombatLabel.Position = UDim2.new(0, 8, 0, 76)
+CombatLabel.BackgroundTransparency = 1
+CombatLabel.Text = "⚔️ Combat Power Gained: +0"
+CombatLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+CombatLabel.TextSize = 11
+CombatLabel.Font = Enum.Font.GothamMedium
+CombatLabel.TextXAlignment = Enum.TextXAlignment.Left
+CombatLabel.Parent = StatusFrame
+
+-- Multiplier Section
+local MultFrame = Instance.new("Frame")
+MultFrame.Size = UDim2.new(1, 0, 0, 120)
+MultFrame.Position = UDim2.new(0, 0, 0, 103)
+MultFrame.BackgroundColor3 = Color3.fromRGB(25, 15, 35)
+MultFrame.BorderSizePixel = 0
+MultFrame.Parent = Content
+
+local MultCorner = Instance.new("UICorner")
+MultCorner.CornerRadius = UDim.new(0, 12)
+MultCorner.Parent = MultFrame
+
+local MultStroke = Instance.new("UIStroke")
+MultStroke.Color = Color3.fromRGB(255, 100, 255)
+MultStroke.Thickness = 2
+MultStroke.Transparency = 0.5
+MultStroke.Parent = MultFrame
+
+local MultTitle = Instance.new("TextLabel")
+MultTitle.Size = UDim2.new(1, -16, 0, 32)
+MultTitle.Position = UDim2.new(0, 8, 0, 6)
+MultTitle.BackgroundTransparency = 1
+MultTitle.Text = "⚡ MULTIPLIER: x5,556"
+MultTitle.TextColor3 = Color3.fromRGB(255, 255, 100)
+MultTitle.TextSize = 18
+MultTitle.Font = Enum.Font.GothamBold
+MultTitle.TextXAlignment = Enum.TextXAlignment.Left
+MultTitle.Parent = MultFrame
+
+local MultInfo = Instance.new("TextLabel")
+MultInfo.Size = UDim2.new(1, -16, 0, 38)
+MultInfo.Position = UDim2.new(0, 8, 0, 36)
+MultInfo.BackgroundTransparency = 1
+MultInfo.Text = "Range: x1,000 - x1,000,000\n🔥 Slide for EXTREME gains!"
+MultInfo.TextColor3 = Color3.fromRGB(255, 200, 150)
+MultInfo.TextSize = 12
+MultInfo.Font = Enum.Font.GothamMedium
+MultInfo.TextXAlignment = Enum.TextXAlignment.Left
+MultInfo.TextWrapped = true
+MultInfo.Parent = MultFrame
+
+local MultSlider = Instance.new("Frame")
+MultSlider.Size = UDim2.new(1, -16, 0, 36)
+MultSlider.Position = UDim2.new(0, 8, 0, 76)
+MultSlider.BackgroundColor3 = Color3.fromRGB(15, 10, 25)
+MultSlider.BorderSizePixel = 0
+MultSlider.Parent = MultFrame
+
+local MultSliderCorner = Instance.new("UICorner")
+MultSliderCorner.CornerRadius = UDim.new(0, 10)
+MultSliderCorner.Parent = MultSlider
+
+local MultFill = Instance.new("Frame")
+MultFill.Size = UDim2.new(0.005, 0, 1, 0)
+MultFill.BackgroundColor3 = Color3.fromRGB(255, 100, 255)
+MultFill.BorderSizePixel = 0
+MultFill.Parent = MultSlider
+
+local MultFillCorner = Instance.new("UICorner")
+MultFillCorner.CornerRadius = UDim.new(0, 10)
+MultFillCorner.Parent = MultFill
+
+local MultFillGradient = Instance.new("UIGradient")
+MultFillGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 150)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 50, 255))
+}
+MultFillGradient.Parent = MultFill
+
+local MultBtn = Instance.new("TextButton")
+MultBtn.Size = UDim2.new(1, 0, 1, 0)
+MultBtn.BackgroundTransparency = 1
+MultBtn.Text = ""
+MultBtn.Parent = MultSlider
+
+local MultValue = Instance.new("TextLabel")
+MultValue.Size = UDim2.new(1, 0, 1, 0)
+MultValue.BackgroundTransparency = 1
+MultValue.Text = "x5,556"
+MultValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+MultValue.TextSize = 16
+MultValue.Font = Enum.Font.GothamBold
+MultValue.Parent = MultSlider
+
+-- Preset Buttons
+local PresetFrame = Instance.new("Frame")
+PresetFrame.Size = UDim2.new(1, 0, 0, 40)
+PresetFrame.Position = UDim2.new(0, 0, 0, 231)
+PresetFrame.BackgroundTransparency = 1
+PresetFrame.Parent = Content
+
+local Preset1M = Instance.new("TextButton")
+Preset1M.Size = UDim2.new(0.32, 0, 1, 0)
+Preset1M.Position = UDim2.new(0, 0, 0, 0)
+Preset1M.BackgroundColor3 = Color3.fromRGB(50, 150, 100)
+Preset1M.Text = "1M"
+Preset1M.TextColor3 = Color3.fromRGB(255, 255, 255)
+Preset1M.TextSize = 15
+Preset1M.Font = Enum.Font.GothamBold
+Preset1M.BorderSizePixel = 0
+Preset1M.Parent = PresetFrame
+
+local Preset1MCorner = Instance.new("UICorner")
+Preset1MCorner.CornerRadius = UDim.new(0, 10)
+Preset1MCorner.Parent = Preset1M
+
+local Preset10M = Instance.new("TextButton")
+Preset10M.Size = UDim2.new(0.32, 0, 1, 0)
+Preset10M.Position = UDim2.new(0.34, 0, 0, 0)
+Preset10M.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+Preset10M.Text = "10M"
+Preset10M.TextColor3 = Color3.fromRGB(255, 255, 255)
+Preset10M.TextSize = 15
+Preset10M.Font = Enum.Font.GothamBold
+Preset10M.BorderSizePixel = 0
+Preset10M.Parent = PresetFrame
+
+local Preset10MCorner = Instance.new("UICorner")
+Preset10MCorner.CornerRadius = UDim.new(0, 10)
+Preset10MCorner.Parent = Preset10M
+
+local Preset100M = Instance.new("TextButton")
+Preset100M.Size = UDim2.new(0.32, 0, 1, 0)
+Preset100M.Position = UDim2.new(0.68, 0, 0, 0)
+Preset100M.BackgroundColor3 = Color3.fromRGB(255, 50, 100)
+Preset100M.Text = "100M"
+Preset100M.TextColor3 = Color3.fromRGB(255, 255, 255)
+Preset100M.TextSize = 15
+Preset100M.Font = Enum.Font.GothamBold
+Preset100M.BorderSizePixel = 0
+Preset100M.Parent = PresetFrame
+
+local Preset100MCorner = Instance.new("UICorner")
+Preset100MCorner.CornerRadius = UDim.new(0, 10)
+Preset100MCorner.Parent = Preset100M
+
+-- Main Buttons
+local EnableBtn = Instance.new("TextButton")
+EnableBtn.Size = UDim2.new(1, 0, 0, 55)
+EnableBtn.Position = UDim2.new(0, 0, 0, 279)
+EnableBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 200)
+EnableBtn.Text = "🚀 ACTIVATE EXTREME MODE"
+EnableBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EnableBtn.TextSize = 20
+EnableBtn.Font = Enum.Font.GothamBold
+EnableBtn.BorderSizePixel = 0
+EnableBtn.Parent = Content
+
+local EnableCorner = Instance.new("UICorner")
+EnableCorner.CornerRadius = UDim.new(0, 12)
+EnableCorner.Parent = EnableBtn
+
+local EnableStroke = Instance.new("UIStroke")
+EnableStroke.Color = Color3.fromRGB(200, 100, 255)
+EnableStroke.Thickness = 3
+EnableStroke.Parent = EnableBtn
+
+local AutoBtn = Instance.new("TextButton")
+AutoBtn.Size = UDim2.new(1, 0, 0, 45)
+AutoBtn.Position = UDim2.new(0, 0, 0, 342)
+AutoBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+AutoBtn.Text = "🤖 AUTO TRAIN: OFF"
+AutoBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
+AutoBtn.TextSize = 16
+AutoBtn.Font = Enum.Font.GothamBold
+AutoBtn.BorderSizePixel = 0
+AutoBtn.Parent = Content
+
+local AutoCorner = Instance.new("UICorner")
+AutoCorner.CornerRadius = UDim.new(0, 10)
+AutoCorner.Parent = AutoBtn
+
+-- Minimized Frame
+local MinimizedFrame = Instance.new("Frame")
+MinimizedFrame.Size = UDim2.new(0, 240, 0, 55)
+MinimizedFrame.Position = UDim2.new(0.5, -120, 0, 10)
+MinimizedFrame.BackgroundColor3 = Color3.fromRGB(30, 15, 40)
+MinimizedFrame.BorderSizePixel = 0
+MinimizedFrame.Visible = false
+MinimizedFrame.Active = true
+MinimizedFrame.Draggable = true
+MinimizedFrame.Parent = ScreenGui
+
+local MinFrameCorner = Instance.new("UICorner")
+MinFrameCorner.CornerRadius = UDim.new(0, 12)
+MinFrameCorner.Parent = MinimizedFrame
+
+local MinStroke = Instance.new("UIStroke")
+MinStroke.Color = Color3.fromRGB(255, 100, 255)
+MinStroke.Thickness = 3
+MinStroke.Parent = MinimizedFrame
+
+local MinLabel = Instance.new("TextLabel")
+MinLabel.Size = UDim2.new(1, -55, 1, 0)
+MinLabel.Position = UDim2.new(0, 12, 0, 0)
+MinLabel.BackgroundTransparency = 1
+MinLabel.Text = "⚡ EXTREME BOOSTER"
+MinLabel.TextColor3 = Color3.fromRGB(255, 100, 255)
+MinLabel.TextSize = 18
+MinLabel.Font = Enum.Font.GothamBold
+MinLabel.TextXAlignment = Enum.TextXAlignment.Left
+MinLabel.Parent = MinimizedFrame
+
+local RestoreBtn = Instance.new("TextButton")
+RestoreBtn.Size = UDim2.new(0, 42, 0, 42)
+RestoreBtn.Position = UDim2.new(1, -48, 0, 6)
+RestoreBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 200)
+RestoreBtn.Text = "+"
+RestoreBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RestoreBtn.TextSize = 26
+RestoreBtn.Font = Enum.Font.GothamBold
+RestoreBtn.BorderSizePixel = 0
+RestoreBtn.Parent = MinimizedFrame
+
+local RestoreCorner = Instance.new("UICorner")
+RestoreCorner.CornerRadius = UDim.new(0, 10)
+RestoreCorner.Parent = RestoreBtn
+
+-- Helper Functions
+local function FormatNumber(n)
+    if n >= 1e9 then return string.format("%.2fB", n / 1e9)
+    elseif n >= 1e6 then return string.format("%.2fM", n / 1e6)
+    elseif n >= 1e3 then return string.format("%.2fK", n / 1e3)
+    else return tostring(math.floor(n)) end
+end
+
+local function UpdateUI()
+    MultTitle.Text = string.format("⚡ MULTIPLIER: x%s", FormatNumber(Settings.GainMultiplier))
+    MultValue.Text = string.format("x%s", FormatNumber(Settings.GainMultiplier))
+    
+    local result = 180 * Settings.GainMultiplier
+    StatsLabel.Text = string.format("💎 +180 → +%s per training", FormatNumber(result))
+    
+    -- Update slider fill (logarithmic scale)
+    local logValue = math.log(Settings.GainMultiplier) / math.log(1000000)
+    MultFill.Size = UDim2.new(math.clamp(logValue, 0, 1), 0, 1, 0)
+    
+    SessionLabel.Text = string.format("🎯 Sessions: %d | Boosted: +%s", 
+        Stats.TrainingSessions, FormatNumber(Stats.TotalGains))
+    
+    CombatLabel.Text = string.format("⚔️ Combat Power Gained: +%s", 
+        FormatNumber(Stats.CombatPowerGained))
+end
+
+local function Notify(text)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "EXTREME BOOSTER",
+        Text = text,
+        Duration = 4
+    })
+end
+
+-- Slider Logic (Logarithmic scale: 1K - 1M)
+local dragging = false
+MultBtn.MouseButton1Down:Connect(function() 
+    dragging = true 
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local pos = math.clamp((UserInputService:GetMouseLocation().X - MultSlider.AbsolutePosition.X) / MultSlider.AbsoluteSize.X, 0, 1)
+        -- Logarithmic scale: 1000 to 1,000,000
+        Settings.GainMultiplier = math.floor(1000 * math.pow(1000, pos))
+        UpdateUI()
+    end
+end)
+
+-- Preset Buttons
+Preset1M.MouseButton1Click:Connect(function()
+    Settings.GainMultiplier = 5556 -- +180 → +1,000,080
+    UpdateUI()
+    Notify("Set to 1M per training!")
+end)
+
+Preset10M.MouseButton1Click:Connect(function()
+    Settings.GainMultiplier = 55556 -- +180 → +10,000,080
+    UpdateUI()
+    Notify("Set to 10M per training!")
+end)
+
+Preset100M.MouseButton1Click:Connect(function()
+    Settings.GainMultiplier = 555556 -- +180 → +100,000,080
+    UpdateUI()
+    Notify("Set to 100M per training!")
+end)
+
+-- Button Events
+MinimizeBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MinimizedFrame.Visible = true
+end)
+
+RestoreBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MinimizedFrame.Visible = false
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    if Settings.Enabled then
+        Notify("Deactivate first before closing!")
+    else
+        ScreenGui:Destroy()
+    end
+end)
+
+EnableBtn.MouseButton1Click:Connect(function()
+    Settings.Enabled = not Settings.Enabled
+    if Settings.Enabled then
+        EnableBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        EnableBtn.Text = "✅ EXTREME MODE ACTIVE"
+        EnableStroke.Color = Color3.fromRGB(150, 255, 150)
+        StatusLabel.Text = "🔥 ACTIVE - EXPLODING GAINS!"
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        Notify(string.format("ACTIVATED! Each train: +%s", FormatNumber(180 * Settings.GainMultiplier)))
+    else
+        EnableBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 200)
+        EnableBtn.Text = "🚀 ACTIVATE EXTREME MODE"
+        EnableStroke.Color = Color3.fromRGB(200, 100, 255)
+        StatusLabel.Text = "⭕ INACTIVE"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 150, 150)
+        Notify("DEACTIVATED")
+    end
+end)
+
+AutoBtn.MouseButton1Click:Connect(function()
+    Settings.AutoTrain = not Settings.AutoTrain
+    if Settings.AutoTrain then
+        AutoBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+        AutoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        AutoBtn.Text = "🤖 AUTO TRAIN: ON"
+        Notify("Auto Train: ON")
+    else
+        AutoBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+        AutoBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
+        AutoBtn.Text = "🤖 AUTO TRAIN: OFF"
+        Notify("Auto Train: OFF")
+    end
+end)
+
+-- EXTREME AGGRESSIVE HOOKING
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    
+    if not Settings.Enabled then
+        return oldNamecall(self, ...)
+    end
+    
+    -- Hook InvokeServer - EXTREME MULTIPLY
+    if method == "InvokeServer" then
+        local results = {oldNamecall(self, ...)}
+        
+        for i = 1, #results do
+            if typeof(results[i]) == "number" and results[i] > 10 then
+                local original = results[i]
+                results[i] = results[i] * Settings.GainMultiplier
+                local gained = results[i] - original
+                Stats.TotalGains = Stats.TotalGains + gained
+                Stats.CombatPowerGained = Stats.CombatPowerGained + (gained * 0.1) -- Estimate
+            end
+        end
+        
+        return unpack(results)
+    end
+    
+    -- Hook FireServer - EXTREME SPEED
+    if method == "FireServer" then
+        if self.Name == "TrainSpeedHasChanged" and args[1] then
+            args[1] = 999999 -- Maximum speed
+            Stats.TrainingSessions = Stats.TrainingSessions + 1
+            task.spawn(UpdateUI)
+        end
+        return oldNamecall(self, unpack(args))
+    end
+    
+    return oldNamecall(self, ...)
+end))
+
+-- Hook ALL BindableFunctions - EXTREME BOOST
+task.spawn(function()
+    task.wait(2)
+    for _, service in pairs({ReplicatedStorage, workspace}) do
+        for _, descendant in pairs(service:GetDescendants()) do
+            if descendant:IsA("BindableFunction") then
+                pcall(function()
+                    local oldInvoke = descendant.Invoke
+                    descendant.Invoke = newcclosure(function(self, ...)
+                        local result = oldInvoke(self, ...)
+                        
+                        if Settings.Enabled and typeof(result) == "number" and result > 10 then
+                            return result * Settings.GainMultiplier
+                        end
+                        
+                        return result
+                    end)
+                end)
+            end
+        end
+    end
+end)
+
+-- Hook TrainSystem - DIRECT EXTREME BOOST
+task.spawn(function()
+    local TrainSystem = ReplicatedStorage:WaitForChild("TrainSystem", 10)
+    if TrainSystem then
+        -- Hook PlayerTrainValueHasChanged
+        local trainChanged = TrainSystem.Remote:FindFirstChild("PlayerTrainValueHasChanged")
+        if trainChanged then
+            trainChanged.OnClientEvent:Connect(function(plr, trainType, newVal, oldVal)
+                if Settings.Enabled and newVal and oldVal and plr == player then
+                    local original = newVal - oldVal
+                    local boosted = original * (Settings.GainMultiplier - 1)
+                    Stats.TotalGains = Stats.TotalGains + boosted
+                    Stats.CombatPowerGained = Stats.CombatPowerGained + (boosted * 0.1)
+                    task.spawn(UpdateUI)
+                    
+                    print(string.format("💎 [EXTREME BOOST] Type %d: +%d → +%s", 
+                        trainType, original, FormatNumber(original * Settings.GainMultiplier)))
+                end
+            end)
+        end
+        
+        -- Hook GetTrainValue
+        local getTrainValue = TrainSystem.Bindable:FindFirstChild("GetTrainValue")
+        if getTrainValue then
+            local old = getTrainValue.Invoke
+            getTrainValue.Invoke = newcclosure(function(self, ...)
+                local val = old(self, ...)
+                if Settings.Enabled and typeof(val) == "number" then
+                    return val * Settings.GainMultiplier
+                end
+                return val
+            end)
+        end
+        
+        -- Hook GetCombatPower - BOOST COMBAT POWER
+        local getCombatPower = TrainSystem.Bindable:FindFirstChild("GetCombatPower")
+        if getCombatPower then
+            local old = getCombatPower.Invoke
+            getCombatPower.Invoke = newcclosure(function(self, ...)
+                local val = old(self, ...)
+                if Settings.Enabled and Settings.BoostCombatPower and typeof(val) == "number" then
+                    return val * math.min(Settings.GainMultiplier / 100, 100) -- Cap untuk safety
+                end
+                return val
+            end)
+        end
+        
+        -- Hook PlayerCombatPowerHasChanged
+        local combatChanged = TrainSystem.Remote:FindFirstChild("PlayerCombatPowerHasChanged")
+        if combatChanged then
+            combatChanged.OnClientEvent:Connect(function(plr, newPower)
+                if Settings.Enabled and plr == player then
+                    print(string.format("⚔️ [COMBAT POWER] New Power: %s", FormatNumber(newPower)))
+                end
+            end)
+        end
+    end
+end)
+
+-- Hook Statistics System
+task.spawn(function()
+    local Statistics = ReplicatedStorage:WaitForChild("Statistics", 10)
+    if Statistics then
+        local statsChanged = Statistics.Remote:FindFirstChild("StatisticsDataHasChanged")
+        if statsChanged then
+            statsChanged.OnClientEvent:Connect(function(pointsGained, trainType)
+                if Settings.Enabled and pointsGained then
+                    local boosted = pointsGained * Settings.GainMultiplier
+                    print(string.format("📊 [STATS] Type %d: +%d → +%s", 
+                        trainType or 0, pointsGained, FormatNumber(boosted)))
+                end
+            end)
+        end
+    end
+end)
+
+-- EXTREME Auto Train Loop
+task.spawn(function()
+    while task.wait(0.1) do
+        if Settings.AutoTrain and Settings.Enabled then
+            pcall(function()
+                local TrainEquip = ReplicatedStorage:FindFirstChild("TrainEquipment")
+                if TrainEquip and TrainEquip:FindFirstChild("Remote") then
+                    -- Spam both training types for maximum gain
+                    local stationary = TrainEquip.Remote:FindFirstChild("ApplyStationaryTrain")
+                    if stationary then
+                        stationary:InvokeServer()
+                    end
+                    
+                    task.wait(0.05)
+                    
+                    local mobile = TrainEquip.Remote:FindFirstChild("ApplyMobileTrain")
+                    if mobile then
+                        mobile:InvokeServer()
+                    end
+                    
+                    -- Fire training speed
+                    local trainSpeed = ReplicatedStorage:FindFirstChild("TrainSystem")
+                    if trainSpeed and trainSpeed:FindFirstChild("Remote") then
+                        local speedRemote = trainSpeed.Remote:FindFirstChild("TrainSpeedHasChanged")
+                        if speedRemote then
+                            speedRemote:FireServer(999999)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Combat Power Booster Loop
+task.spawn(function()
+    while task.wait(5) do
+        if Settings.Enabled and Settings.BoostCombatPower then
+            pcall(function()
+                local TrainSystem = ReplicatedStorage:FindFirstChild("TrainSystem")
+                if TrainSystem and TrainSystem:FindFirstChild("Bindable") then
+                    local combatPowerChanged = TrainSystem.Bindable:FindFirstChild("PlayerCombatPowerHasChanged")
+                    if combatPowerChanged then
+                        local getCombatPower = TrainSystem.Bindable:FindFirstChild("GetCombatPower")
+                        if getCombatPower then
+                            local currentPower = getCombatPower:Invoke(player)
+                            if currentPower then
+                                local boostedPower = math.floor(currentPower * 1.5) -- 50% boost every 5 seconds
+                                combatPowerChanged:Fire(player, boostedPower)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Initialize
+UpdateUI()
+Notify("EXTREME BOOSTER Loaded!")
+
+print("================================================")
+print("⚡💥 EXTREME TRAINING BOOSTER - LOADED! 💥⚡")
+print("================================================")
+print(string.format("💎 Current Multiplier: x%s", FormatNumber(Settings.GainMultiplier)))
+print(string.format("🚀 Current Gain: +180 → +%s", FormatNumber(180 * Settings.GainMultiplier)))
+print("")
+print("📊 PRESET GAINS:")
+print("   1M Button:   +180 → +1,000,000")
+print("   10M Button:  +180 → +10,000,000")
+print("   100M Button: +180 → +100,000,000")
+print("")
+print("⚔️ COMBAT POWER BOOST: ENABLED")
+print("🔥 Training speed: MAXIMUM")
+print("")
+print("🎯 INSTRUCTIONS:")
+print("1. Use preset buttons OR slide for custom")
+print("2. Click ACTIVATE EXTREME MODE")
+print("3. Press E to train")
+print("4. Watch gains EXPLODE to MILLIONS!")
+print("")
+print("💡 TIP: Start with 1M, then go higher!")
+print("================================================")
