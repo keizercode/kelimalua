@@ -1,15 +1,16 @@
--- Training Multiplier - FULLY WORKING & TESTED
--- No errors, clean execution, fully functional
+-- Training Multiplier - FIXED VERSION
+-- Fixed thread safety issues
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
 -- Settings
 local Settings = {
-    Multiplier = 5556, -- Default: 1M per training
+    Multiplier = 5556,
     Enabled = false,
     AutoTrain = false
 }
@@ -32,11 +33,13 @@ local function FormatNumber(num)
 end
 
 local function Notify(title, text)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = title;
-        Text = text;
-        Duration = 3;
-    })
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title;
+            Text = text;
+            Duration = 3;
+        })
+    end)
 end
 
 -- Create GUI
@@ -325,17 +328,35 @@ restoreBtn.BorderSizePixel = 0
 
 Instance.new("UICorner", restoreBtn).CornerRadius = UDim.new(0, 6)
 
--- Update UI function
+-- Queue untuk update UI yang aman
+local updateQueue = {}
+
+-- Update UI function - THREAD SAFE
 local function UpdateUI()
-    multTitle.Text = string.format("⚡ MULTIPLIER: x%s", FormatNumber(Settings.Multiplier))
-    sliderValue.Text = string.format("x%s", FormatNumber(Settings.Multiplier))
-    gainText.Text = string.format("💎 +180 → +%s per train", FormatNumber(180 * Settings.Multiplier))
-    
-    local logVal = math.log(Settings.Multiplier) / math.log(1000000)
-    sliderFill.Size = UDim2.new(math.clamp(logVal, 0, 1), 0, 1, 0)
-    
-    statsText.Text = string.format("🎯 Sessions: %d | Boosted: +%s", Stats.Sessions, FormatNumber(Stats.TotalGains))
+    table.insert(updateQueue, {
+        multTitle = string.format("⚡ MULTIPLIER: x%s", FormatNumber(Settings.Multiplier)),
+        sliderValue = string.format("x%s", FormatNumber(Settings.Multiplier)),
+        gainText = string.format("💎 +180 → +%s per train", FormatNumber(180 * Settings.Multiplier)),
+        sliderFill = math.clamp(math.log(Settings.Multiplier) / math.log(1000000), 0, 1),
+        statsText = string.format("🎯 Sessions: %d | Boosted: +%s", Stats.Sessions, FormatNumber(Stats.TotalGains))
+    })
 end
+
+-- Process UI updates on RenderStepped (main thread)
+RunService.RenderStepped:Connect(function()
+    if #updateQueue > 0 then
+        local update = updateQueue[#updateQueue]
+        updateQueue = {}
+        
+        pcall(function()
+            multTitle.Text = update.multTitle
+            sliderValue.Text = update.sliderValue
+            gainText.Text = update.gainText
+            sliderFill.Size = UDim2.new(update.sliderFill, 0, 1, 0)
+            statsText.Text = update.statsText
+        end)
+    end
+end)
 
 -- Slider logic
 local dragging = false
@@ -434,92 +455,94 @@ autoBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CORE HOOKING SYSTEM
-local oldnc = nil
-oldnc = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-    if not Settings.Enabled then
-        return oldnc(self, ...)
-    end
-    
+-- CORE HOOKING SYSTEM - IMPROVED
+local oldnc
+oldnc = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
     
-    -- Hook InvokeServer
-    if method == "InvokeServer" then
+    -- Hook FireServer for training tracking
+    if method == "FireServer" and Settings.Enabled then
+        if tostring(self):find("TrainSpeed") then
+            task.spawn(function()
+                Stats.Sessions = Stats.Sessions + 1
+                UpdateUI()
+            end)
+        end
+    end
+    
+    -- Hook InvokeServer dengan penanganan yang lebih baik
+    if method == "InvokeServer" and Settings.Enabled then
         local results = {oldnc(self, ...)}
         
-        for i = 1, #results do
-            if type(results[i]) == "number" and results[i] > 10 then
-                local orig = results[i]
-                results[i] = results[i] * Settings.Multiplier
-                Stats.TotalGains = Stats.TotalGains + (results[i] - orig)
+        -- Process hasil di thread terpisah
+        task.spawn(function()
+            for i = 1, #results do
+                if type(results[i]) == "number" and results[i] > 10 and results[i] < 1000000 then
+                    local orig = results[i]
+                    results[i] = results[i] * Settings.Multiplier
+                    Stats.TotalGains = Stats.TotalGains + (results[i] - orig)
+                    UpdateUI()
+                end
             end
-        end
+        end)
         
         return unpack(results)
     end
     
-    -- Hook FireServer for training speed
-    if method == "FireServer" then
-        if tostring(self) == "TrainSpeedHasChanged" then
-            if args[1] then
-                args[1] = 999999
-            end
-            Stats.Sessions = Stats.Sessions + 1
-            UpdateUI()
-        end
-        return oldnc(self, unpack(args))
-    end
-    
     return oldnc(self, ...)
-end))
+end)
 
--- Hook BindableFunctions
-coroutine.wrap(function()
-    wait(2)
+-- Hook BindableFunction dengan penanganan yang lebih aman
+task.spawn(function()
+    task.wait(2)
     
     for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-        if v:IsA("BindableFunction") then
-            local oldInv = v.Invoke
-            v.Invoke = newcclosure(function(self, ...)
-                local res = oldInv(self, ...)
-                
-                if Settings.Enabled and type(res) == "number" and res > 10 then
-                    return res * Settings.Multiplier
+        if v:IsA("BindableFunction") and v.Name:find("GetTrainValue") then
+            pcall(function()
+                local oldFunc = v.OnInvoke
+                v.OnInvoke = function(...)
+                    local result = oldFunc(...)
+                    
+                    if Settings.Enabled and type(result) == "number" and result > 10 and result < 1000000 then
+                        local boosted = result * Settings.Multiplier
+                        task.spawn(function()
+                            Stats.TotalGains = Stats.TotalGains + (boosted - result)
+                            UpdateUI()
+                        end)
+                        return boosted
+                    end
+                    
+                    return result
                 end
-                
-                return res
             end)
         end
     end
-end)()
+end)
 
 -- Auto Train Loop
-coroutine.wrap(function()
-    while wait(0.2) do
+task.spawn(function()
+    while task.wait(0.3) do
         if Settings.Enabled and Settings.AutoTrain then
             pcall(function()
-                local te = ReplicatedStorage:FindFirstChild("TrainEquipment")
-                if te then
-                    local remote = te:FindFirstChild("Remote")
-                    if remote then
-                        local st = remote:FindFirstChild("ApplyStationaryTrain")
-                        if st then
-                            st:InvokeServer()
-                        end
-                    end
+                local applyTrain = ReplicatedStorage:FindFirstChild("TrainEquipment")
+                    and ReplicatedStorage.TrainEquipment:FindFirstChild("Remote")
+                    and ReplicatedStorage.TrainEquipment.Remote:FindFirstChild("ApplyStationaryTrain")
+                
+                if applyTrain then
+                    applyTrain:InvokeServer()
                 end
             end)
         end
     end
-end)()
+end)
 
 -- Initialize
 UpdateUI()
 Notify("Loaded!", "Set preset and activate!")
 
 print("==========================================")
-print("⚡ EXTREME BOOSTER - LOADED!")
+print("⚡ EXTREME BOOSTER - LOADED (FIXED)!")
 print("==========================================")
 print("💎 Default: 1M per training")
 print("🚀 Click presets to change")
